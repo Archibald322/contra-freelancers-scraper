@@ -1,0 +1,96 @@
+{
+  "name": "Sync Top Contra Tech Freelancers to Airtable & Slack Recruitment Channel",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "Daily Sourcing Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "actorId": "moneygain/contra-freelancers-scraper",
+        "runInput": "={\n  \"startUrls\": [\"https://contra.com/discover?roles=AI+Developer\"],\n  \"roles\": [\"AI Developer\", \"Web Developer\"],\n  \"onlyAvailableForInquiries\": true,\n  \"maxItems\": 25\n}"
+      },
+      "id": "2",
+      "name": "Run Contra Freelancers Scraper",
+      "type": "n8n-nodes-base.apify",
+      "typeVersion": 1,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Contra_Talent_Pipeline",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData"
+        }
+      },
+      "id": "3",
+      "name": "Save Talent to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [690, 200]
+    },
+    {
+      "parameters": {
+        "channel": "#recruiting-talent-leads",
+        "text": "=🚀 *New Top Contra Talent Discovered!*\n👤 *{{ $json.fullName }}* ({{ $json.username }})\n💼 *Headline*: {{ $json.title }}\n📍 *Location*: {{ $json.location }}\n💰 *Earnings Badge*: {{ $json.platformEarningsBadge || 'Rising Star' }}\n🤝 *Hired Count*: {{ $json.hiredCount }} times\n🔗 *Profile*: {{ $json.profileUrl }}"
+      },
+      "id": "4",
+      "name": "Post Candidate to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [690, 400]
+    }
+  ],
+  "connections": {
+    "Daily Sourcing Trigger": {
+      "main": [
+        [
+          {
+            "node": "Run Contra Freelancers Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Contra Freelancers Scraper": {
+      "main": [
+        [
+          {
+            "node": "Save Talent to Google Sheets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Post Candidate to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
